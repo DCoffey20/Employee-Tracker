@@ -19,7 +19,7 @@ let connection = mysql.createConnection({
 
 connection.connect(function (err) {
     if (err) throw err;
-    console.log("connected as id " + connection.threadId);
+    // console.log("connected as id " + connection.threadId);
     start();
 });
 
@@ -28,9 +28,9 @@ function start() {
         .prompt({
             name: "action",
             type: "list",
-            message: "What would you like to do?",
+            message: "What Would You Like To Do?",
             choices: [
-                "View Employee",
+                "View Employees",
                 "Add Department",
                 "Add Role",
                 "Add Employee",
@@ -60,7 +60,7 @@ function start() {
                     addEmployee();
                     break;
 
-                case "View Department":
+                case "View Employee's By Department":
                     viewEmployeesByDepartment();
                     break;
 
@@ -68,7 +68,7 @@ function start() {
                     viewRole();
                     break;
 
-                case "View Employee":
+                case "View Employees":
                     viewEmployees();
                     break;
 
@@ -110,20 +110,13 @@ function start() {
 function viewEmployees() {
     //    console.log("You are now viewing all employee's. YAY!!!")
     let query = `select 
-	E1.id,
-    E1.first_name,
-	E1.last_name,
-	R.title,
-    D.name,
-    R.salary,
-	concat(E2.first_name, " ", E2.last_name) as Manager
-from 
-	employee E1
-left join employee E2
-	on E1.manager_id = E2.id
-inner join role R
-	on E1.role_id = R.id
-inner join department D
+    E1.id,E1.first_name,E1.last_name,R.title,D.name,R.salary,concat(E2.first_name, " ", E2.last_name) as Manager
+    from employee E1
+    left join employee E2
+    on E1.manager_id = E2.id
+    inner join role R
+    on E1.role_id = R.id
+    inner join department D
     on D.id = R.department_id`;
     connection.query(query, function (err, res) {
         if (err) {
@@ -136,49 +129,176 @@ inner join department D
 }
 
 function addDepartment() {
-
+    start();
 }
 
 function addRole() {
-
+    start();
 }
 
 function addEmployee() {
+    inquirer.prompt(
+        {
+            name: "newEmployeeFirstName",
+            type: "input",
+            message: "Please Enter New Employee's First Name!"
+        },
+        {
+            name: "newEmployeeLastName",
+            type: "input",
+            message: "Please Enter New Employee's First Name!"
+        },
+        {
+            name: "newEmployeeRole",
+            type: "list",
+            message: "What Will Your Employee's Role Be?",
+            choices: [
+                "LEAD ENGINEER",
+                "JUNIOR DEVELOPER",
+                "SOFTWARE ENGINEER"
+            ]
+        },
+        {
+            name: "newEmployeeManager",
+            type: "list",
+            message: "Who Will Be Your New Employee's Manager?",
+            choices: [
+                "NONE",
+                "Miller Gillespie",
+                "Bo Patrick",
+                "Joni Johnston",
+                "Neel Keenan"
+            ]
+        }
+    )
+        .then(function (firstName, lastName, role, manager) {
+            console.log(firstName, lastName, role, manager);
+            start();
+        })
 
 }
 
-function viewEmployeesByDepartment() {
+async function viewEmployeesByDepartment() {
+    // console.log("Is this working?")
+    let departments = [];
+    connection.query("select name from department", function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+        }
+        for (i = 0; i < res.length; i++) {
+            departments.push(res[i].name)
 
+        }
+        console.log(departments);
+
+        // console.log(departments)
+        inquirer.prompt(
+            {
+                name: "department",
+                type: "list",
+                message: "Which Department Would You Like To Look At?",
+                choices: departments
+            }
+        )
+            .then(function (answer) {
+                console.log(answer.department);
+                let query = `select
+                E1.id, E1.first_name, E1.last_name, R.title, D.name, R.salary, concat(E2.first_name, " ", E2.last_name) as Manager
+                from employee E1
+                left join employee E2
+                on E1.manager_id = E2.id
+                inner join role R
+                on E1.role_id = R.id
+                inner join department D
+                on D.id = R.department_id
+                where D.name = ?`;
+                connection.query(query, [answer.department], function (err, res) {
+                    if (err) {
+                        console.error("error connecting: " + err.stack);
+                        return;
+                    }
+                    console.table(res);
+                    start();
+                })
+            })
+    })
 }
 
 function viewRole() {
-
+    start();
 }
 
 function updateEmployeeRole() {
-
+    start();
 }
 
 function updateEmployeeManager() {
-
+    start();
 }
 
 function viewEmployeeByManager() {
+    // console.log("Is this working?")
+    let manager = [];
+    connection.query("select name from department", function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+        }
+        for (i = 0; i < res.length; i++) {
+            departments.push(res[i].name)
+            // console.log(departments);
+        }
 
+    })
+
+    inquirer.prompt([
+        {
+            name: "department",
+            type: "list",
+            message: "Which Manager Would You Like To Look At?",
+            choices: [
+                "SALES",
+                "ENGINEERING",
+                "LEGAL",
+                "FINANCE"
+            ]
+        }
+    ]).then(function (answer) {
+        console.log(departments);
+        let query = `select
+            E1.id, E1.first_name, E1.last_name, R.title, D.name, R.salary, concat(E2.first_name, " ", E2.last_name) as Manager
+            from employee E1
+            left join employee E2
+            on E1.manager_id = E2.id
+            inner join role R
+            on E1.role_id = R.id
+            inner join department D
+            on D.id = R.department_id
+            where E1.manager_id = 3`;
+        connection.query(query, function (err, res) {
+            if (err) {
+                console.error("error connecting: " + err.stack);
+                return;
+            }
+            console.table(res);
+            start();
+        })
+    })
 }
 
 function removeDepartment() {
-
+    start();
 }
 
 function removeRole() {
-
+    start();
 }
 
 function removeEmployee() {
-
+    start();
 }
 
 function viewDepartmentsBudget() {
-
+    start();
 }
