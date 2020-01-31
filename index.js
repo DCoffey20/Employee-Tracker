@@ -115,7 +115,8 @@ function viewEmployees() {
     inner join role R
     on E1.role_id = R.id
     inner join department D
-    on D.id = R.department_id`;
+    on D.id = R.department_id
+    order by E1.id`;
     connection.query(query, function (err, res) {
         if (err) {
             console.error("error connecting: " + err.stack);
@@ -456,7 +457,32 @@ function viewEmployeeByManager() {
 }
 
 function removeDepartment() {
-    start();
+    let department = [];
+    connection.query(`select name, id from department`, function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+        }
+        for (i = 0; i < res.length; i++) {
+            department.push({value: res[i].id, name:res[i].name})
+        }
+        inquirer.prompt([
+            {
+                name: "deleteDepartment",
+                type: "list",
+                message: "Which Department Would You Like To Delete? (!DELETING A DEPARTMENT WILL DELETE ALL EMPLOYEES IN THAT DEPARTMENT!)",
+                choices: department
+            }
+        ]).then(function ({deleteDepartment}) {
+            connection.query(`delete from department where id = ?`, [deleteDepartment], function (err, res) {
+                if (err) {
+                    console.error("error connecting: " + err.stack);
+                    return;
+                }
+                start();
+            })
+        })
+    })
 }
 
 function removeRole() {
