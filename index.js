@@ -486,7 +486,32 @@ function removeDepartment() {
 }
 
 function removeRole() {
-    start();
+    let role = [];
+    connection.query(`select title, id from role`, function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+        }
+        for (i = 0; i < res.length; i++) {
+            role.push({value: res[i].id, name:res[i].title})
+        }
+        inquirer.prompt([
+            {
+                name: "deleteRole",
+                type: "list",
+                message: "Which Role Would You Like To Delete? (!DELETING A ROLE WILL DELETE ALL EMPLOYEES IN THAT ROLE!)",
+                choices: role
+            }
+        ]).then(function ({deleteRole}) {
+            connection.query(`delete from role where id = ?`, [deleteRole], function (err, res) {
+                if (err) {
+                    console.error("error connecting: " + err.stack);
+                    return;
+                }
+                start();
+            })
+        })
+    })
 }
 
 function removeEmployee() {
