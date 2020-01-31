@@ -137,45 +137,81 @@ function addRole() {
 }
 
 function addEmployee() {
-    inquirer.prompt(
-        {
-            name: "newEmployeeFirstName",
-            type: "input",
-            message: "Please Enter New Employee's First Name!"
-        },
-        {
-            name: "newEmployeeLastName",
-            type: "input",
-            message: "Please Enter New Employee's First Name!"
-        },
-        {
-            name: "newEmployeeRole",
-            type: "list",
-            message: "What Will Your Employee's Role Be?",
-            choices: [
-                "LEAD ENGINEER",
-                "JUNIOR DEVELOPER",
-                "SOFTWARE ENGINEER"
-            ]
-        },
-        {
-            name: "newEmployeeManager",
-            type: "list",
-            message: "Who Will Be Your New Employee's Manager?",
-            choices: [
-                "NONE",
-                "Miller Gillespie",
-                "Bo Patrick",
-                "Joni Johnston",
-                "Neel Keenan"
-            ]
+    let role = [];
+    let manager = [];
+    connection.query(`select 
+    E1.id,E1.first_name,E1.last_name,R.title,D.name,R.salary,concat(E2.first_name, " ", E2.last_name) as Manager, R.id as Role_ID, D.id as Department_ID
+    from employee E1
+    left join employee E2
+    on E1.manager_id = E2.id
+    inner join role R
+    on E1.role_id = R.id
+    inner join department D
+    on D.id = R.department_id`, function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
         }
-    )
-        .then(function (firstName, lastName, role, manager) {
-            console.log(firstName, lastName, role, manager);
-            start();
-        })
+        for (i = 0; i < res.length; i++) {
+            role.push({value:res[i].Role_ID,name:res[i].title})
+            if(res[i].Manager){
+            manager.push(res[i].Manager)
+            }
+        }
+        // console.log(manager)
+        
+        // connection.query(`select concat(E2.first_name, " ", E2.last_name) as Manager from employee E1 left join employee E2 on E1.manager_id = E2.id;`, function (err, res) {
+        //     if (err) {
+        //         console.error("error connecting: " + err.stack);
+        //         return;
+        //     }
+        //     for (j = 0; j < res.length; j++) {
+        //         manager.push(res[j].Manager)
 
+        //     }
+
+        //     console.log(res[j].manager)
+            inquirer.prompt([
+                {
+                    name: "newEmployeeFirstName",
+                    type: "input",
+                    message: "Please Enter New Employee's First Name!"
+                },
+                {
+                    name: "newEmployeeLastName",
+                    type: "input",
+                    message: "Please Enter New Employee's Last Name!"
+                },
+                {
+                    name: "newEmployeeRole",
+                    type: "list",
+                    message: "What Will Your Employee's Role Be?",
+                    choices: role
+                },
+                {
+                    name: "newEmployeeManager",
+                    type: "list",
+                    message: "Who Will Be Your New Employee's Manager?",
+                    choices: manager
+                }
+            ])
+            .then(function ({newEmployeeFirstName, newEmployeeLastName, newEmployeeRole, newEmployeeManager}) {
+                // console.log(newEmployeeFirstName, newEmployeeLastName, newEmployeeRole, newEmployeeManager);
+                let manager = newEmployeeManager.split(" ")
+                manager = res.filter(row=>row.first_name === manager[0]&&row.last_name === manager[1])[0].id
+                
+               
+                console.log(role)
+                connection.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)",[newEmployeeFirstName, newEmployeeLastName, newEmployeeRole, manager], function (err, res){
+                    if (err) throw err
+                    // console.table(res)
+                    start();
+                })
+                
+                
+            })
+        })
+    // })
 }
 
 async function viewEmployeesByDepartment() {
@@ -190,7 +226,7 @@ async function viewEmployeesByDepartment() {
             departments.push(res[i].name)
 
         }
-        console.log(departments);
+        // console.log(departments);
 
         // console.log(departments)
         inquirer.prompt(
