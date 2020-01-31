@@ -30,14 +30,14 @@ function start() {
             message: "What Would You Like To Do?",
             choices: [
                 "View Employees",
+                "View Employees By Department",
+                "View Employees By Role",
+                "View Employees By Manager",
                 "Add Department",
                 "Add Role",
                 "Add Employee",
-                "View Employee's By Department",
-                "View Role",
                 "Update Employee's Role",
                 "Update Employee Managers",
-                "View Employees By Manager",
                 "Remove Department",
                 "Remove Role",
                 "Remove Employee",
@@ -59,12 +59,12 @@ function start() {
                     addEmployee();
                     break;
 
-                case "View Employee's By Department":
+                case "View Employees By Department":
                     viewEmployeesByDepartment();
                     break;
 
-                case "View Role":
-                    viewRole();
+                case "View Employees By Role":
+                    viewEmployeesByRole();
                     break;
 
                 case "View Employees":
@@ -244,7 +244,6 @@ function addEmployee() {
 }
 
 function viewEmployeesByDepartment() {
-    // console.log("Is this working?")
     let departments = [];
     connection.query("select name from department", function (err, res) {
         if (err) {
@@ -286,8 +285,46 @@ function viewEmployeesByDepartment() {
     })
 }
 
-function viewRole() {
-    start();
+function viewEmployeesByRole() {
+    let role = [];
+    connection.query("select title from role", function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+        }
+        for (i = 0; i < res.length; i++) {
+            role.push(res[i].title)
+        }
+        inquirer.prompt(
+            {
+                name: "role",
+                type: "list",
+                message: "Which Department Would You Like To Look At?",
+                choices: role
+            }
+        )
+            .then(function (answer) {
+                console.log(answer.role);
+                let query = `select
+                E1.id, E1.first_name, E1.last_name, R.title, D.name, R.salary, concat(E2.first_name, " ", E2.last_name) as Manager
+                from employee E1
+                left join employee E2
+                on E1.manager_id = E2.id
+                inner join role R
+                on E1.role_id = R.id
+                inner join department D
+                on D.id = R.department_id
+                where R.title = ?`;
+                connection.query(query, [answer.role], function (err, res) {
+                    if (err) {
+                        console.error("error connecting: " + err.stack);
+                        return;
+                    }
+                    console.table(res);
+                    start();
+                })
+            })
+    })
 }
 
 function updateEmployeeRole() {
