@@ -2,7 +2,6 @@ let mysql = require("mysql");
 let inquirer = require("inquirer");
 let conTab = require("console.table");
 
-
 let connection = mysql.createConnection({
     host: "localhost",
 
@@ -108,7 +107,6 @@ function start() {
 }
 
 function viewEmployees() {
-    //    console.log("You are now viewing all employee's. YAY!!!")
     let query = `select 
     E1.id,E1.first_name,E1.last_name,R.title,D.name,R.salary,concat(E2.first_name, " ", E2.last_name) as Manager
     from employee E1
@@ -129,18 +127,69 @@ function viewEmployees() {
 }
 
 function addDepartment() {
-    start();
+    inquirer.prompt(
+        {
+            name: "newDepartment",
+            type: "input",
+            message: "Please Enter The New Department Name."
+        }
+    )
+        .then(function ({ newDepartment }) {
+            connection.query("INSERT INTO department (name) VALUES (?)", [newDepartment], function (err, res) {
+                if (err) {
+                    console.error("error connecting: " + err.stack);
+                    return;
+                }
+                start();
+            })
+        })
 }
 
 function addRole() {
-    start();
+    let department = [];
+    connection.query(`select name, id from department`, function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+        }
+        for (i = 0; i < res.length; i++) {
+                department.push({ value: res[i].id, name: res[i].name })
+        }
+        inquirer.prompt([
+            {
+                name: "roleDepartment",
+                type: "list",
+                message: "Which Department Does The New Role Belong To?",
+                choices: department
+            },
+            {
+                name: "newRole",
+                type: "input",
+                message: "Please Enter The New Role Name."
+            },
+            {
+                name: "newSalary",
+                type: "number",
+                message: "What Is The Salary Of The New Role?",
+            }
+        ])
+            .then(function ({ newRole, newSalary, roleDepartment }) {
+                connection.query("INSERT INTO role (title, salary, department_id) VALUES (?,?,?)", [newRole, newSalary, roleDepartment], function (err, res) {
+                    if (err) {
+                        console.error("error connecting: " + err.stack);
+                        return;
+                    }
+                    start();
+                })
+            })
+    })
 }
 
 function addEmployee() {
     let role = [];
     let manager = [];
     connection.query(`select 
-    E1.id,E1.first_name,E1.last_name,R.title,D.name,R.salary,concat(E2.first_name, " ", E2.last_name) as Manager, R.id as Role_ID, D.id as Department_ID
+    E1.id,E1.first_name,E1.last_name,R.title,D.name,R.salary,concat(E2.first_name, " ", E2.last_name) as Manager, R.id as Role_ID, D.id as Department_ID, E1.manager_id as Man_ID
     from employee E1
     left join employee E2
     on E1.manager_id = E2.id
@@ -153,68 +202,48 @@ function addEmployee() {
             return;
         }
         for (i = 0; i < res.length; i++) {
-            role.push({value:res[i].Role_ID,name:res[i].title})
-            if(res[i].Manager){
-            manager.push(res[i].Manager)
+            role.push({ value: res[i].Role_ID, name: res[i].title })
+            if (res[i].Manager) {
+                manager.push({ value: res[i].Man_ID, name: res[i].Manager })
             }
         }
-        // console.log(manager)
-        
-        // connection.query(`select concat(E2.first_name, " ", E2.last_name) as Manager from employee E1 left join employee E2 on E1.manager_id = E2.id;`, function (err, res) {
-        //     if (err) {
-        //         console.error("error connecting: " + err.stack);
-        //         return;
-        //     }
-        //     for (j = 0; j < res.length; j++) {
-        //         manager.push(res[j].Manager)
-
-        //     }
-
-        //     console.log(res[j].manager)
-            inquirer.prompt([
-                {
-                    name: "newEmployeeFirstName",
-                    type: "input",
-                    message: "Please Enter New Employee's First Name!"
-                },
-                {
-                    name: "newEmployeeLastName",
-                    type: "input",
-                    message: "Please Enter New Employee's Last Name!"
-                },
-                {
-                    name: "newEmployeeRole",
-                    type: "list",
-                    message: "What Will Your Employee's Role Be?",
-                    choices: role
-                },
-                {
-                    name: "newEmployeeManager",
-                    type: "list",
-                    message: "Who Will Be Your New Employee's Manager?",
-                    choices: manager
-                }
-            ])
-            .then(function ({newEmployeeFirstName, newEmployeeLastName, newEmployeeRole, newEmployeeManager}) {
-                // console.log(newEmployeeFirstName, newEmployeeLastName, newEmployeeRole, newEmployeeManager);
-                let manager = newEmployeeManager.split(" ")
-                manager = res.filter(row=>row.first_name === manager[0]&&row.last_name === manager[1])[0].id
-                
-               
-                console.log(role)
-                connection.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)",[newEmployeeFirstName, newEmployeeLastName, newEmployeeRole, manager], function (err, res){
-                    if (err) throw err
-                    // console.table(res)
+        inquirer.prompt([
+            {
+                name: "newEmployeeFirstName",
+                type: "input",
+                message: "Please Enter New Employee's First Name!"
+            },
+            {
+                name: "newEmployeeLastName",
+                type: "input",
+                message: "Please Enter New Employee's Last Name!"
+            },
+            {
+                name: "newEmployeeRole",
+                type: "list",
+                message: "What Will Your Employee's Role Be?",
+                choices: role
+            },
+            {
+                name: "newEmployeeManager",
+                type: "list",
+                message: "Who Will Be Your New Employee's Manager?",
+                choices: manager
+            }
+        ])
+            .then(function ({ newEmployeeFirstName, newEmployeeLastName, newEmployeeRole, newEmployeeManager }) {
+                connection.query("INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)", [newEmployeeFirstName, newEmployeeLastName, newEmployeeRole, newEmployeeManager], function (err, res) {
+                    if (err) {
+                        console.error("error connecting: " + err.stack);
+                        return;
+                    }
                     start();
                 })
-                
-                
             })
-        })
-    // })
+    })
 }
 
-async function viewEmployeesByDepartment() {
+function viewEmployeesByDepartment() {
     // console.log("Is this working?")
     let departments = [];
     connection.query("select name from department", function (err, res) {
@@ -224,11 +253,7 @@ async function viewEmployeesByDepartment() {
         }
         for (i = 0; i < res.length; i++) {
             departments.push(res[i].name)
-
         }
-        // console.log(departments);
-
-        // console.log(departments)
         inquirer.prompt(
             {
                 name: "department",
@@ -274,35 +299,26 @@ function updateEmployeeManager() {
 }
 
 function viewEmployeeByManager() {
-    // console.log("Is this working?")
     let manager = [];
-    connection.query("select name from department", function (err, res) {
+    connection.query(`select 
+    concat(employee.first_name, " ", employee.last_name) as Manager, employee.manager_id as Man_ID
+    from employee`, function (err, res) {
         if (err) {
             console.error("error connecting: " + err.stack);
             return;
         }
         for (i = 0; i < res.length; i++) {
-            departments.push(res[i].name)
-            // console.log(departments);
+            manager.push(res[i].Manager)
         }
-
-    })
-
-    inquirer.prompt([
-        {
-            name: "department",
-            type: "list",
-            message: "Which Manager Would You Like To Look At?",
-            choices: [
-                "SALES",
-                "ENGINEERING",
-                "LEGAL",
-                "FINANCE"
-            ]
-        }
-    ]).then(function (answer) {
-        console.log(departments);
-        let query = `select
+        inquirer.prompt([
+            {
+                name: "manager",
+                type: "list",
+                message: "Which Manager Would You Like To Look At?",
+                choices: manager
+            }
+        ]).then(function (answer) {
+            let query = `select
             E1.id, E1.first_name, E1.last_name, R.title, D.name, R.salary, concat(E2.first_name, " ", E2.last_name) as Manager
             from employee E1
             left join employee E2
@@ -311,14 +327,15 @@ function viewEmployeeByManager() {
             on E1.role_id = R.id
             inner join department D
             on D.id = R.department_id
-            where E1.manager_id = 3`;
-        connection.query(query, function (err, res) {
-            if (err) {
-                console.error("error connecting: " + err.stack);
-                return;
-            }
-            console.table(res);
-            start();
+            where concat(E2.first_name, " ", E2.last_name) = ?`;
+            connection.query(query, [answer.manager], function (err, res) {
+                if (err) {
+                    console.error("error connecting: " + err.stack);
+                    return;
+                }
+                console.table(res);
+                start();
+            })
         })
     })
 }
