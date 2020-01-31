@@ -515,7 +515,32 @@ function removeRole() {
 }
 
 function removeEmployee() {
-    start();
+    let employee = [];
+    connection.query(`select concat(E1.first_name, " ", E1.last_name) as Employee, id from employee as E1`, function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+        }
+        for (i = 0; i < res.length; i++) {
+            employee.push({value: res[i].id, name:res[i].Employee})
+        }
+        inquirer.prompt([
+            {
+                name: "deleteEmployee",
+                type: "list",
+                message: "Which Employee Would You Like To Delete?",
+                choices: employee
+            }
+        ]).then(function ({deleteEmployee}) {
+            connection.query(`delete from employee where id = ?`, [deleteEmployee], function (err, res) {
+                if (err) {
+                    console.error("error connecting: " + err.stack);
+                    return;
+                }
+                start();
+            })
+        })
+    })
 }
 
 function viewDepartmentsBudget() {
