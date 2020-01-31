@@ -544,5 +544,31 @@ function removeEmployee() {
 }
 
 function viewDepartmentsBudget() {
-    start();
+    let department = [];
+    connection.query(`select name, id from department`, function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+        }
+        for (i = 0; i < res.length; i++) {
+            department.push({value: res[i].id, name:res[i].name})
+        }
+        inquirer.prompt([
+            {
+                name: "departmentBudget",
+                type: "list",
+                message: "Which Department Budget Would You Like To View?",
+                choices: department
+            }
+        ]).then(function ({departmentBudget}) {
+            connection.query(`select D.name as Department, sum(salary) as Budget from employee E inner join role R on R.id = E.role_id inner join department D on D.id = R.department_id where R.department_id = ?;`, [departmentBudget], function (err, res) {
+                if (err) {
+                    console.error("error connecting: " + err.stack);
+                    return;
+                }
+                console.table(res);
+                start();
+            })
+        })
+    })
 }
