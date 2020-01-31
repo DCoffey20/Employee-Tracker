@@ -36,7 +36,7 @@ function start() {
                 "Add Department",
                 "Add Role",
                 "Add Employee",
-                "Update Employee's Role",
+                "Update Employee Role",
                 "Update Employee Managers",
                 "Remove Department",
                 "Remove Role",
@@ -153,7 +153,7 @@ function addRole() {
             return;
         }
         for (i = 0; i < res.length; i++) {
-                department.push({ value: res[i].id, name: res[i].name })
+            department.push({ value: res[i].id, name: res[i].name })
         }
         inquirer.prompt([
             {
@@ -328,11 +328,89 @@ function viewEmployeesByRole() {
 }
 
 function updateEmployeeRole() {
-    start();
+    let employee = [];
+    let role = [];
+    connection.query(`select 
+    concat(E1.first_name, " ", E1.last_name) as Employee, R.title, R.id as Role_ID, E1.id as Emp_ID
+    from employee E1
+    inner join role R
+    on E1.role_id = R.id`, function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+        }
+        for (i = 0; i < res.length; i++) {
+            role.push({ value: res[i].Role_ID, name: res[i].title })
+            if (res[i].Employee)
+                employee.push({ value: res[i].Emp_ID, name: res[i].Employee })
+        }
+        inquirer.prompt([
+            {
+                name: "updateEmployee",
+                type: "list",
+                message: "Which Employee's Role Do You Want To Update?",
+                choices: employee
+            },
+            {
+                name: "newRole",
+                type: "list",
+                message: "Please Select Employee's New Role.",
+                choices: role
+            }
+        ])
+            .then(function ({ updateEmployee, newRole }) {
+                connection.query("UPDATE employee SET role_id = ? WHERE id = ?", [newRole, updateEmployee], function (err, res) {
+                    if (err) {
+                        console.error("error connecting: " + err.stack);
+                        return;
+                    }
+                    start();
+                })
+            })
+    })
 }
 
 function updateEmployeeManager() {
-    start();
+    let employee = [];
+    let manager = [];
+    connection.query(`select 
+    E1.id, concat(E1.first_name," ", E1.last_name) as Employee, concat(E2.first_name, " ", E2.last_name) as Manager, E1.manager_id as Man_ID, E1.id as Emp_ID
+    from employee E1
+    left join employee E2
+    on E1.manager_id = E2.id`, function (err, res) {
+        if (err) {
+            console.error("error connecting: " + err.stack);
+            return;
+        }
+        for (i = 0; i < res.length; i++) {
+            manager.push({ value: res[i].Man_ID, name: res[i].Manager })
+            if (res[i].Employee)
+                employee.push({ value: res[i].Emp_ID, name: res[i].Employee })
+        }
+        inquirer.prompt([
+            {
+                name: "updateEmployee",
+                type: "list",
+                message: "Which Employee's Manager Do You Want To Update?",
+                choices: employee
+            },
+            {
+                name: "newManager",
+                type: "list",
+                message: "Please Select The Employee's New Manager.",
+                choices: manager
+            }
+        ])
+            .then(function ({ updateEmployee, newManager }) {
+                connection.query("UPDATE employee SET manager_id = ? WHERE id = ?", [newManager, updateEmployee], function (err, res) {
+                    if (err) {
+                        console.error("error connecting: " + err.stack);
+                        return;
+                    }
+                    start();
+                })
+            })
+    })
 }
 
 function viewEmployeeByManager() {
