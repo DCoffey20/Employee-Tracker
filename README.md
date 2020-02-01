@@ -48,8 +48,8 @@ In the command line, type "node index.js". The user can use the arrow keys to na
 
 # Screenshots
 
-![Employee-Tracker](./assets/screenshots.PNG "Employee-Tracker Home Questions")
+![Employee-Tracker](./assets/Screenshots.PNG "Employee-Tracker Home Questions")
 
-![Employee-Tracker](./assets/screenshots1.PNG "Employee-Tracker View Table")
+![Employee-Tracker](./assets/Screenshots1.PNG "Employee-Tracker View Table")
 
-![Employee-Tracker](./assets/screenshots2.PNG "Employee-Tracker Budget")
+![Employee-Tracker](./assets/Screenshots2.PNG "Employee-Tracker Budget")
